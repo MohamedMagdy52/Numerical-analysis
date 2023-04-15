@@ -1,0 +1,55 @@
+import numpy as np
+import pandas as pd
+import math
+from sympy import *
+
+print("-"*20,"Curve fitting (expontial function)","-"*20,"\n")
+print("\n the function is in the form: y=ae^(bx) \n")
+
+#creating the table
+n = int(input('Enter the number of data points: '))
+t = np.zeros((n+1,4))
+print('Enter data for x and y: \n')
+for i in range(n):
+  t[i][0] = float(input(f"Enter x[{i}]: "))
+  t[i][1] = float(input(f"Enter y[{i}]: "))
+
+
+sum_x=0
+sum_y=0
+sum_xy=0
+sum_x2=0
+for row in range(n):
+  t[row][1] = np.log(t[row][1])
+  t[row][2]=t[row][0]*t[row][1]
+  t[row][3]=t[row][0]**2
+  sum_x+=t[row][0]
+  sum_y+=t[row][1]
+  sum_xy+=t[row][2]
+  sum_x2+=t[row][3]
+
+t[n][0]= sum_x
+t[n][1]= sum_y
+t[n][2]= sum_xy
+t[n][3]= sum_x2
+
+#convert everything into a dataframe
+df = pd.DataFrame(t)
+
+#getting and solving equations: Y=AX+B, XY=AX^2+BX
+X,Y,A,B = symbols('X Y A B')
+eq1 = Eq(A*sum_x  + B*n,sum_y)
+eq2 = Eq(A*sum_x2 + B*sum_x,sum_xy)
+
+result = solve([eq1,eq2],(A,B))
+a = (math.e)**(result[B])
+b = result[A]
+
+#assign row and columns names
+df = df.rename(index = {n:"Summation: "})
+df.columns = ['X=x', 'Y=ln(y)','XY','X^2']
+#print the dataframe
+print('\n',df,'\n')
+#print solution
+print(f"a = {a}\n")
+print(f"b = {b}\n")

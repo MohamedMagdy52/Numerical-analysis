@@ -1,0 +1,60 @@
+import pandas as pd
+from sympy import *
+
+n = int(input("Enter number of points: "))
+X,Y = [],[]
+for i in range (n):
+  X.append(float(input(f"Enter x[{i}]: ")))
+  Y.append(float(input(f"Enter y[{i}]: ")))
+
+df = pd.DataFrame(list(zip(X, Y)), columns =['X', 'Y'])
+df = df.transpose()
+print('\n',df,'\n')
+
+choice = int(input("press 1 to get the equation\npress 2 to enter a value for x\npress 3 to enter a value for y: "))
+print('\n')
+
+if (choice==1 or choice == 2):
+    x = symbols('x')
+    exp = 0
+    for i in range(n):
+       L = 1-x+x
+       for j in range(n):
+          if (i!=j):
+            L = L * (x-X[j])/( X[i] - X[j])
+
+       exp = exp + L*Y[i]
+       if (exp==0):          #to avoid poly(0)
+         continue
+       ans = poly(exp).expr
+
+if (choice==3):
+    y = symbols('y')
+    exp = 0
+    for i in range(n):
+       L = 1-y+y
+       for j in range(n):
+          if (i!=j):
+            L = L * (y-Y[j])/( Y[i] - Y[j])
+
+       exp = exp + L*X[i]
+       if (exp==0):          #to avoid poly(0)
+         continue
+       ans = poly(exp).expr
+
+
+
+if (choice==1):
+  print(ans)
+ 
+elif (choice==2):
+  a = float(input("Enter value for x: "))
+  ans = ans.subs(x,a)
+  print(f"The point is ({a},{ans})")
+
+
+elif (choice==3):
+  b = float(input("Enter value for y: "))
+  ans = ans.subs(y,b)
+  print(f"The point is ({ans},{b})")
+

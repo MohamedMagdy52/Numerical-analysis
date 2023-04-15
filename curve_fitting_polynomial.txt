@@ -1,0 +1,184 @@
+import numpy as np
+import pandas as pd
+from sympy import *
+
+print("-"*20,"Curve fitting (polynomials)","-"*20,"\n")
+#creating the table
+deg = int(input("Enter the degree of the function: "))
+n = int(input('Enter number of data points: '))
+
+
+columns = 3*deg+2
+if deg==1:
+  columns=4
+elif deg==2:
+  columns=7
+t = np.zeros((n+1,columns))   #rows,columns,  
+                              #columns = 2 + deg + 2*deg
+                              # 2 --> x,y
+                              # deg --> (x)(y), (x)^2(y), ..
+                              # 2*deg --> x^2, x^3, x^4, ...
+
+# getting input values for x and y
+print('Enter data for x and y: \n')
+for i in range(n):
+  t[i][0] = float(input(f"Enter x[{i}]: "))
+  t[i][1] = float(input(f"Enter y[{i}]: "))
+
+#getting the function
+s = input("Enter the function: ")
+f = sympify(s)
+
+# defining the variables in the function: a,b,c,...
+x = Symbol('x')
+mylist = []
+for i in range(0,deg+1):
+  mylist.append(chr(ord("a")+i))
+for e in mylist:
+  globals()[e] = Symbol(e)
+
+
+#generating the table:
+#first part, generating: x,y:
+sum=0
+for column in range(0,2):
+  sum=0
+  for row in range(n):
+    sum+=t[row][column]
+  t[n][column] = sum
+
+#---------------------1st degree---------------------------------------------
+if deg==1:
+  #second part, generating: (x)(y), (x^2)y, (x^3)y, ...
+  power=1
+  for column in range(2,3):
+    sum=0
+    for row in range(n):
+      t[row][column] = ((t[row][0])**(power))*t[row][1]
+      sum+=t[row][column]
+    
+    t[n][column] = sum
+    power+=1
+
+  #third part: generating: x^2, x^3, ...
+  power=2
+  for column in range(3,4):
+    sum=0
+    for row in range(n):
+      t[row][column] = (t[row][0])**(power)
+      sum+=t[row][column]
+    t[n][column] = sum
+    power+=1
+  
+  #convert everything into a dataframe
+  df = pd.DataFrame(t)
+
+  #getting equations:
+  eqs = []
+  f1 = f-df[1][n]       #column,row
+  f1 = f1.subs(x,df[0][n])
+  f1 = f1.subs(b,b*n)
+  eqs.append(f1)
+  f = f*x
+  f2 = f-df[2][n]
+  f2 = f2-a*x**2+a*df[3][n]
+  f2 = f2-b*x+b*df[0][n]
+  eqs.append(f2)
+  #solving
+  def neq(n):
+    return eqs
+
+  eqs = Tuple(*neq(n))
+  syms = eqs.free_symbols
+  sol = solve(eqs, syms)
+
+  #assign row and columns names
+  df = df.rename(index = {n:"Summation: "})
+  df.columns = ['x', 'y','xy','x^2']
+  #print the dataframe
+  print('\n',df,'\n')
+  #print solution
+  print(sol)
+
+
+else:
+#---------------------higher degrees----------------------------------------
+  #second part, generating: (x)(y), (x^2)y, (x^3)y, ...
+  power=1
+  for column in range(2,2+deg):
+    sum=0
+    for row in range(n):
+      t[row][column] = ((t[row][0])**(power))*t[row][1]
+      sum+=t[row][column]
+    
+    t[n][column] = sum
+    power+=1
+
+  #third part: generating: x^2, x^3, ...
+  power=2
+  k=3*deg+2
+  if degree==2:
+    k =7
+  for column in range(2+deg,k):
+    sum=0
+    for row in range(n):
+      t[row][column] = (t[row][0])**(power)
+      sum+=t[row][column]
+    t[n][column] = sum
+    power+=1
+
+  #convert everything into a dataframe
+  df = pd.DataFrame(t)
+  #getting equations:
+  eqs = []
+  count=1        #for y,xy,(x^2)y,...
+  power = 2+deg    #for x,x^2,...
+  k=0
+  for index in range(0,deg+1):
+    if(index>=3):
+      k+=1
+    power = 2+deg+k
+    f1 = f - df[count][n]
+    for term in range(0,deg+1):
+      if index==0 and term==0:
+        f1 = f1 - sympify((chr(ord("a")+deg)))+sympify((chr(ord("a")+deg)))*n
+        f1 = f1 - sympify((chr(ord("a")+deg-1)))*x+sympify((chr(ord("a")+deg-1)))*df[0][n]
+        continue
+      elif index==0 and term==1:
+        continue
+      elif index==1 and term==0:
+        f1 = f1 - sympify((chr(ord("a")+deg)))*x+sympify((chr(ord("a")+deg)))*df[0][n]
+        continue
+      f1 = f1 - sympify((chr(ord("a")+deg-term)))*(x**(term+index))+sympify((chr(ord("a")+deg-term)))*df[power][n]
+      power+=1
+    
+    count+=1
+    eqs.append(f1)
+    f = f*x
+  #solving
+  def neq(n):
+    return eqs
+
+  eqs = Tuple(*neq(n))
+  syms = eqs.free_symbols
+  sol = solve(eqs, syms)
+
+  #assign row and columns names
+  df = df.rename(index = {n:"Summation: "})
+  columns = ['x','y','xy']
+  count=1
+  for i in range(deg-1):
+    columns.append("(x^"+chr(ord('1')+ count)+")y")
+    count+=1
+  count=1
+  k=2*deg
+  if deg==2:
+    k=3
+  for i in range(k):
+    columns.append("x^"+chr(ord('1')+ count))
+    count+=1
+  df.columns = columns
+  #print the dataframe
+  print('\n',df,'\n')
+  #print solution
+  print(sol)
